@@ -20,17 +20,8 @@ describe('df-iot', () => {
   const redisClient = redis.createClient()
 
   let server
-  let scope
 
   beforeEach((done) => {
-    scope = nock('http://dream.factory', {
-      reqheaders: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'X-DreamFactory-Api-Key': 'abcde'
-      }
-    })
-
     redisClient.flushdb(() => {
       server = start({
         dreamFactory: 'http://dream.factory',
@@ -50,12 +41,44 @@ describe('df-iot', () => {
   })
 
   function setupAuth (body, code, response) {
-    const result = scope.post('/v2/user/session', body)
-    return result.reply(code, JSON.stringify(response), {
+    let result = nock('http://dream.factory', {
+      reqheaders: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-DreamFactory-Api-Key': 'abcde'
+      }
+    })
+
+    result = result.post('/api/v2/user/session', body)
+
+    result = result.reply(code, JSON.stringify(response), {
       headers: {
         'Content-Type': 'application/json'
       }
     })
+
+    return result
+  }
+
+  function authorizePublish (token, body, code, response) {
+    let result = nock('http://dream.factory', {
+      reqheaders: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-DreamFactory-Api-Key': 'abcde',
+        'X-DreamFactory-Session-Token': token
+      }
+    })
+
+    result = result.post('/api/v2/telemetry/_table/telemetry', body)
+
+    result = result.reply(code, JSON.stringify(response), {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+
+    return result
   }
 
   it('should support positive auth', (done) => {
@@ -101,28 +124,35 @@ describe('df-iot', () => {
       session_token: 'atoken'
     })
 
-    const bCall = setupAuth({
-      email: 'c',
-      password: 'd',
-      duration: 0
-    }, 200, {
-      session_token: 'btoken'
+    const client1 = mqtt.connect('mqtt://a:b@localhost')
+    const now = new Date()
+
+    const pCall = authorizePublish('atoken', (body) => {
+      const res = body.resource[0]
+      const result =
+        res.topic === 'hello' &&
+        res.clientId === client1.options.clientId &&
+        res.payload.some === 'data'
+
+      const date = new Date(res.timestamp)
+
+      return result && now <= date
+    }, 200, {})
+
+    const toSend = JSON.stringify({
+      some: 'data'
     })
 
-    const client1 = mqtt.connect('mqtt://a:b@localhost')
-    const client2 = mqtt.connect('mqtt://c:d@localhost')
-
     client1.subscribe('hello', () => {
-      client2.publish('hello', 'world')
+      client1.publish('hello', toSend)
     })
 
     client1.on('message', (topic, payload) => {
       expect(topic).to.equal('hello')
-      expect(payload.toString()).to.equal('world')
+      expect(payload.toString()).to.equal(toSend)
       client1.end()
-      client2.end()
       expect(aCall.isDone()).to.be.true()
-      expect(bCall.isDone()).to.be.true()
+      expect(pCall.isDone()).to.be.true()
       done()
     })
   })
