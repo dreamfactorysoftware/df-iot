@@ -2,6 +2,7 @@
 
 const minimist = require('minimist')
 const mosca = require('mosca')
+const request = require('request')
 
 function start (opts, cb) {
   opts = opts || {}
@@ -29,6 +30,41 @@ function start (opts, cb) {
   }
 
   var server = new mosca.Server(opts, cb)
+
+  server.authenticate = function (client, username, password, callback) {
+    request({
+      method: 'POST',
+      baseUrl: opts.dreamFactory,
+      url: '/v2/user/session',
+      json: true,
+      timeout: 1000 * 10, // 10 seconds
+      headers: {
+        'X-DreamFactory-Api-Key': opts.apiKey
+      },
+      body: {
+        email: username,
+        password: password.toString(),
+        duration: 0
+      }
+    }, (err, res, body) => {
+      if (err) {
+        return callback(err)
+      }
+
+      if (res.statusCode > 300 || res.statusCode < 200) {
+        // denying authorization
+        return callback(null, false)
+      }
+
+      if (!body.session_token) {
+        return callback(new Error('no session_token in a valid response'))
+      }
+
+      client.sessionToken = body.session_token
+
+      callback(null, true)
+    })
+  }
 
   server.on('error', function (err) {
     // TODO close gracefully
