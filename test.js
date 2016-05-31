@@ -27,7 +27,10 @@ describe('df-iot', () => {
         dreamFactory: 'http://dream.factory',
         apiKey: 'abcde',
         sessionToken: 'session',
-        authorizationToken: 'Basic authToken'
+        authorizationToken: 'Basic authToken',
+        logger: {
+          level: 'error'
+        }
       }, done)
     })
   })
@@ -92,7 +95,7 @@ describe('df-iot', () => {
 
   it('should support positive auth', (done) => {
     const aCall = setupAuth({
-      filter: '(DeviceID=\\\'a\\\') AND (Token=\\\'b\\\')'
+      filter: '(DeviceID=\'a\') AND (Token=\'b\')'
     }, 200, {
       resource: [{
         _id: 'abcde',
@@ -117,7 +120,7 @@ describe('df-iot', () => {
 
   it('should support negative auth via a statusCode', (done) => {
     const aCall = setupAuth({
-      filter: '(DeviceID=\\\'a\\\') AND (Token=\\\'b\\\')'
+      filter: '(DeviceID=\'a\') AND (Token=\'b\')'
     }, 400, '')
 
     const client = mqtt.connect('mqtt://a:b@localhost')
@@ -131,7 +134,7 @@ describe('df-iot', () => {
 
   it('should support negative auth via Connect=false', (done) => {
     const aCall = setupAuth({
-      filter: '(DeviceID=\\\'a\\\') AND (Token=\\\'b\\\')'
+      filter: '(DeviceID=\'a\') AND (Token=\'b\')'
     }, 200, {
       resource: [{
         _id: 'abcde',
@@ -154,7 +157,7 @@ describe('df-iot', () => {
 
   it('should support negative auth via missing resource', (done) => {
     const aCall = setupAuth({
-      filter: '(DeviceID=\\\'a\\\') AND (Token=\\\'b\\\')'
+      filter: '(DeviceID=\'a\') AND (Token=\'b\')'
     }, 200, {
       resource: []
     })
@@ -171,7 +174,7 @@ describe('df-iot', () => {
   it('should support basic mqtt', { plan: 6 }, (done) => {
     // first call done for auth
     const aCall = setupAuth({
-      filter: '(DeviceID=\\\'a\\\') AND (Token=\\\'b\\\')'
+      filter: '(DeviceID=\'a\') AND (Token=\'b\')'
     }, 200, {
       resource: [{
         _id: 'abcde',
@@ -185,7 +188,7 @@ describe('df-iot', () => {
 
     // second call done for authorizing the SUBSCRIBE
     const bCall = setupAuth({
-      filter: '(DeviceID=\\\'a\\\') AND (Token=\\\'b\\\')'
+      filter: '(DeviceID=\'a\') AND (Token=\'b\')'
     }, 200, {
       resource: [{
         _id: 'abcde',
@@ -199,7 +202,7 @@ describe('df-iot', () => {
 
     // second call done for authorizing the PUBLISH
     const cCall = setupAuth({
-      filter: '(DeviceID=\\\'a\\\') AND (Token=\\\'b\\\')'
+      filter: '(DeviceID=\'a\') AND (Token=\'b\')'
     }, 200, {
       resource: [{
         _id: 'abcde',

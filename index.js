@@ -4,6 +4,7 @@ const minimist = require('minimist')
 const mosca = require('mosca')
 const request = require('request')
 const Parse = require('fast-json-parse')
+const fs = require('fs')
 
 function start (opts, cb) {
   opts = opts || {}
@@ -30,6 +31,15 @@ function start (opts, cb) {
     db: opts.redisDb
   }
 
+  opts.logger = opts.logger || {
+    level: 'info',
+    name: 'df-iot'
+  }
+
+  if (!opts.dreamFactory) {
+    throw new Error('missing dreamFactory base url')
+  }
+
   if (!opts.apiKey) {
     throw new Error('missing apiKey')
   }
@@ -52,7 +62,7 @@ function start (opts, cb) {
       json: true,
       timeout: 1000 * 10, // 10 seconds
       qs: {
-        filter: '(DeviceID=\\\'' + deviceId + '\\\') AND (Token=\\\'' + password + '\\\')'
+        filter: '(DeviceID=\'' + deviceId + '\') AND (Token=\'' + password + '\')'
       },
       headers: {
         'X-DreamFactory-Api-Key': opts.apiKey,
@@ -60,6 +70,8 @@ function start (opts, cb) {
         'Authorization': opts.authorizationToken
       }
     }
+
+    server.logger.debug(reqData, 'fetching device')
     request(reqData, cb)
   }
 
@@ -72,16 +84,19 @@ function start (opts, cb) {
       }
 
       if (res.statusCode > 300 || res.statusCode < 200) {
+        server.logger.info({ deviceId }, 'authentication denied for wrong status code')
         // denying authorization
         return callback(null, false)
       }
 
       if (body.resource.length === 0) {
+        server.logger.info({ deviceId }, 'authentication denied for missing device')
         // denying authorization
         return callback(null, false)
       }
 
       if (!body.resource[0].Connect) {
+        server.logger.info({ deviceId }, 'authentication denied because client is disabled')
         // denying authorization
         return callback(null, false)
       }
@@ -90,6 +105,8 @@ function start (opts, cb) {
         deviceId,
         password
       }
+
+      server.logger.info({ deviceId }, 'authentication successful')
 
       callback(null, true)
     })
@@ -104,19 +121,24 @@ function start (opts, cb) {
       }
 
       if (res.statusCode > 300 || res.statusCode < 200) {
+        server.logger.info({ deviceId }, 'publish authorization failed because device was deleted')
         // denying authorization
         return callback(null, false)
       }
 
       if (body.resource.length === 0) {
+        server.logger.info({ deviceId }, 'publish authorization failed because device was deleted')
         // denying authorization
         return callback(null, false)
       }
 
       if (!body.resource[0].Publish) {
+        server.logger.info({ deviceId }, 'publish authorization failed because of missing Publish permission')
         // denying authorization
         return callback(null, false)
       }
+
+      server.logger.info({ deviceId }, 'publish authorization successful')
 
       callback(null, true)
     })
@@ -131,20 +153,24 @@ function start (opts, cb) {
       }
 
       if (res.statusCode > 300 || res.statusCode < 200) {
+        server.logger.info({ deviceId }, 'subscribe authorization failed because of delete device')
         // denying authorization
-        return callback(null, false)
+        return callback(new Error('missing device'))
       }
 
       if (body.resource.length === 0) {
+        server.logger.info({ deviceId }, 'subscribe authorization failed because of delete device')
         // denying authorization
-        return callback(null, false)
+        return callback(new Error('missing device'))
       }
 
       if (!body.resource[0].Subscribe) {
+        server.logger.info({ deviceId }, 'subscribe authorization failed because of missing Subscribe permission')
         // denying authorization
         return callback(null, false)
       }
 
+      server.logger.info({ deviceId }, 'publish authorization successful')
       callback(null, true)
     })
   }
@@ -204,5 +230,16 @@ function start (opts, cb) {
 module.exports = start
 
 if (require.main === module) {
-  start(minimist(process.argv.slice(2)))
+  let opts = minimist(process.argv.slice(2))
+  if (opts.config) {
+    let parse = new Parse(fs.readFileSync(opts.config))
+    if (parse.err) {
+      console.error('problems in parsing the JSON config file')
+      console.error(parse.err)
+      process.exit(1)
+    } else {
+      opts = parse.value
+    }
+  }
+  start(opts)
 }
