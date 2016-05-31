@@ -30,26 +30,44 @@ function start (opts, cb) {
     db: opts.redisDb
   }
 
+  if (!opts.apiKey) {
+    throw new Error('missing apiKey')
+  }
+
+  if (!opts.sessionToken) {
+    throw new Error('missing sessionToken')
+  }
+
+  if (!opts.authorizationToken) {
+    throw new Error('missing authorizationToken')
+  }
+
   var server = new mosca.Server(opts, cb)
 
-  server.authenticate = function (client, username, password, callback) {
-    request({
-      method: 'POST',
+  function fetchDevice (deviceId, password, cb) {
+    const reqData = {
+      method: 'GET',
       baseUrl: opts.dreamFactory,
-      url: '/api/v2/user/session',
+      url: '/api/v2/devices/_table/devices',
       json: true,
       timeout: 1000 * 10, // 10 seconds
-      headers: {
-        'X-DreamFactory-Api-Key': opts.apiKey
+      qs: {
+        filter: '(DeviceID=\\\'' + deviceId + '\\\') AND (Token=\\\'' + password + '\\\')'
       },
-      body: {
-        email: username,
-        password: password.toString(),
-        duration: 0
+      headers: {
+        'X-DreamFactory-Api-Key': opts.apiKey,
+        'X-DreamFactory-Session-Token': opts.sessionToken,
+        'Authorization': opts.authorizationToken
       }
-    }, (err, res, body) => {
+    }
+    request(reqData, cb)
+  }
+
+  // TODO add logging
+  server.authenticate = function (client, username, password, callback) {
+    const deviceId = username || client.clientId
+    fetchDevice(deviceId, password, (err, res, body) => {
       if (err) {
-        console.log('authenticate', err)
         return callback(err)
       }
 
@@ -58,18 +76,85 @@ function start (opts, cb) {
         return callback(null, false)
       }
 
-      if (!body.session_token) {
-        return callback(new Error('no session_token in a valid response'))
+      if (body.resource.length === 0) {
+        // denying authorization
+        return callback(null, false)
       }
 
-      client.sessionToken = body.session_token
+      if (!body.resource[0].Connect) {
+        // denying authorization
+        return callback(null, false)
+      }
+
+      client.credentials = {
+        deviceId,
+        password
+      }
 
       callback(null, true)
     })
   }
 
   server.authorizePublish = function (client, topic, payload, callback) {
-    const parsed = new Parse(payload)
+    const deviceId = client.credentials.deviceId
+    const password = client.credentials.password
+    fetchDevice(deviceId, password, (err, res, body) => {
+      if (err) {
+        return callback(err)
+      }
+
+      if (res.statusCode > 300 || res.statusCode < 200) {
+        // denying authorization
+        return callback(null, false)
+      }
+
+      if (body.resource.length === 0) {
+        // denying authorization
+        return callback(null, false)
+      }
+
+      if (!body.resource[0].Publish) {
+        // denying authorization
+        return callback(null, false)
+      }
+
+      callback(null, true)
+    })
+  }
+
+  server.authorizeSubscribe = function (client, topic, callback) {
+    const deviceId = client.credentials.deviceId
+    const password = client.credentials.password
+    fetchDevice(deviceId, password, (err, res, body) => {
+      if (err) {
+        return callback(err)
+      }
+
+      if (res.statusCode > 300 || res.statusCode < 200) {
+        // denying authorization
+        return callback(null, false)
+      }
+
+      if (body.resource.length === 0) {
+        // denying authorization
+        return callback(null, false)
+      }
+
+      if (!body.resource[0].Subscribe) {
+        // denying authorization
+        return callback(null, false)
+      }
+
+      callback(null, true)
+    })
+  }
+
+  server.published = function (packet, client, callback) {
+    if (!client) {
+      return callback()
+    }
+
+    const parsed = new Parse(packet.payload)
     if (parsed.err) {
       return callback(parsed.err)
     }
@@ -83,12 +168,13 @@ function start (opts, cb) {
       timeout: 1000 * 10, // 10 seconds
       headers: {
         'X-DreamFactory-Api-Key': opts.apiKey,
-        'X-DreamFactory-Session-Token': client.sessionToken
+        'X-DreamFactory-Session-Token': opts.sessionToken,
+        'Authorization': opts.authorizationToken
       },
       body: {
         resource: [{
-          clientId: client.id,
-          topic: topic,
+          clientId: client.credentials.deviceId,
+          topic: packet.topic,
           timestamp: new Date(),
           payload: parsed.value
         }]
