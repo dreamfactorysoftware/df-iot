@@ -230,7 +230,11 @@ function start (opts, cb) {
 module.exports = start
 
 if (require.main === module) {
-  let opts = minimist(process.argv.slice(2))
+  let opts = minimist(process.argv.slice(2), {
+    alias: {
+      config: 'c'
+    }
+  })
   if (opts.config) {
     let parse = new Parse(fs.readFileSync(opts.config))
     if (parse.err) {

@@ -16,7 +16,7 @@ npm install mqtt -g
 To launch:
 
 ```
-node index.js -c config.json
+node index.js --config config.json
 ```
 
 To test, one one shell:
