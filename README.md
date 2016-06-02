@@ -28,5 +28,5 @@ mqtt sub -u Fan1 -P Fan1 -v -t '#'
 On another shell:
 
 ```
-mqtt pub -u TempSensor1 -P TempSensor1 -v -t 'hello' -m 'world'
+mqtt pub -u TempSensor1 -P TempSensor1 -v -t 'hello' -m '{ "hello": "world" }'
 ```

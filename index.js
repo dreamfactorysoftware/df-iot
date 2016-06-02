@@ -180,10 +180,16 @@ function start (opts, cb) {
       return callback()
     }
 
+    const deviceId = client.credentials.deviceId
+    const logger = server.logger
+
     const parsed = new Parse(packet.payload)
     if (parsed.err) {
+      logger.debug({ deviceId, err: parsed.err }, 'unable to parse payload as json')
       return callback(parsed.err)
     }
+
+    logger.debug({ deviceId, payload: parsed.value }, 'uploading to telemetry')
 
     // TODO setup agent
     request({
@@ -199,7 +205,7 @@ function start (opts, cb) {
       },
       body: {
         resource: [{
-          clientId: client.credentials.deviceId,
+          clientId: deviceId,
           topic: packet.topic,
           timestamp: new Date(),
           payload: parsed.value
@@ -211,9 +217,11 @@ function start (opts, cb) {
       }
 
       if (res.statusCode > 300 || res.statusCode < 200) {
+        logger.warn({ deviceId }, 'published failed')
         // denying authorization
         return callback(null, false)
       }
+      logger.debug({ deviceId }, 'upload to telemetry completed')
 
       callback(null, 200)
     })
