@@ -14,9 +14,9 @@ const beforeEach = lab.beforeEach
 const afterEach = lab.afterEach
 const after = lab.after
 
-const start = require('.')
+const start = require('..')
 
-describe('df-iot', () => {
+describe('mqtt integration', () => {
   const redisClient = redis.createClient()
 
   let server
