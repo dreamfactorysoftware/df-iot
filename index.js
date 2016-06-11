@@ -5,14 +5,18 @@ const Parse = require('fast-json-parse')
 const fs = require('fs')
 const pino = require('pino')
 const moscaSerializers = require('mosca/lib/serializers')
+const steed = require('steed')
 const mqtt = require('./lib/mqtt')
+const http = require('./lib/http')
 
 function start (opts, cb) {
   opts = opts || {}
 
-  opts.interfaces = opts.interfaces || [
-    { type: 'mqtt', port: 1883 }
+  opts.interfaces = [
+    { type: 'mqtt', port: opts.mqttPort || 1883 }
   ]
+
+  opts.httpPort = opts.httpPort || 3000
 
   const loggerLevel = opts.logger && opts.logger.level || 'info'
   const loggerName = opts.logger && opts.logger.name || 'df-iot'
@@ -42,21 +46,50 @@ function start (opts, cb) {
     throw new Error('missing authorizationToken')
   }
 
-  const server = mqtt(opts, {
-    // hack to correctly support pino
-    // TODO remove in mosca v2
-    child: (opts) => {
-      delete opts.serializers
-      return logger.child(opts)
+  const servers = []
+
+  steed.parallel([
+    function startMqtt (cb) {
+      const server = mqtt(opts, {
+        // hack to correctly support pino
+        // TODO remove in mosca v2
+        child: (opts) => {
+          delete opts.serializers
+          return logger.child(opts)
+        }
+      }, cb)
+      servers.push(server)
+
+      server.on('error', function (err) {
+        // TODO close gracefully
+        throw err
+      })
+    },
+
+    function startHttp (cb) {
+      const server = http(opts, logger, cb)
+      servers.push(server)
+
+      server.on('error', function (err) {
+        // TODO close gracefully
+        throw err
+      })
     }
-  }, cb)
+  ], cb)
 
-  server.on('error', function (err) {
-    // TODO close gracefully
-    throw err
-  })
-
-  return server
+  return {
+    close: (done) => {
+      steed.map(servers, (server, cb) => {
+        if (server.close) {
+          // mosca
+          server.close(cb)
+        } else {
+          // hapi
+          server.stop(cb)
+        }
+      }, done)
+    }
+  }
 }
 
 module.exports = start
