@@ -5,6 +5,9 @@ const mosca = require('mosca')
 const request = require('request')
 const Parse = require('fast-json-parse')
 const fs = require('fs')
+const pino = require('pino')
+const moscaSerializers = require('mosca/lib/serializers')
+// const Hapi = require('hapi')
 
 function start (opts, cb) {
   opts = opts || {}
@@ -31,9 +34,16 @@ function start (opts, cb) {
     db: opts.redisDb
   }
 
-  opts.logger = opts.logger || {
-    level: 'info',
-    name: 'df-iot'
+  const loggerLevel = opts.logger && opts.logger.level || 'info'
+
+  opts.logger = {
+    childOf: pino({
+      level: loggerLevel,
+      serializers: {
+        client: moscaSerializers.clientSerializer,
+        packet: moscaSerializers.packetSerializer
+      }
+    })
   }
 
   if (!opts.dreamFactory) {
@@ -75,7 +85,6 @@ function start (opts, cb) {
     request(reqData, cb)
   }
 
-  // TODO add logging
   server.authenticate = function (client, username, password, callback) {
     const deviceId = username || client.clientId
     fetchDevice(deviceId, password, (err, res, body) => {
