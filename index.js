@@ -42,7 +42,14 @@ function start (opts, cb) {
     throw new Error('missing authorizationToken')
   }
 
-  const server = mqtt(opts, logger, cb)
+  const server = mqtt(opts, {
+    // hack to correctly support pino
+    // TODO remove in mosca v2
+    child: (opts) => {
+      delete opts.serializers
+      return logger.child(opts)
+    }
+  }, cb)
 
   server.on('error', function (err) {
     // TODO close gracefully
