@@ -186,4 +186,99 @@ describe('http integration', () => {
       done()
     })
   })
+
+  it('should fail auth on bad status code in DF', (done) => {
+    const aCall = setupAuth({
+      filter: '(DeviceID=\'a\') AND (Token=\'b\')'
+    }, 400, '')
+
+    request({
+      method: 'POST',
+      baseUrl: 'http://localhost:3000',
+      url: '/publish',
+      json: true,
+      auth: {
+        username: 'a',
+        password: 'b'
+      },
+      body: {
+        topic: 'hello',
+        payload: { a: 'thing' }
+      }
+    }, (err, res, body) => {
+      if (err) {
+        return done(err)
+      }
+      expect(res.statusCode).to.equal(401)
+      expect(aCall.isDone()).to.be.true()
+      done()
+    })
+  })
+
+  it('should fail auth on missing resource', (done) => {
+    const aCall = setupAuth({
+      filter: '(DeviceID=\'a\') AND (Token=\'b\')'
+    }, 200, {
+      resource: []
+    })
+
+    request({
+      method: 'POST',
+      baseUrl: 'http://localhost:3000',
+      url: '/publish',
+      json: true,
+      auth: {
+        username: 'a',
+        password: 'b'
+      },
+      body: {
+        topic: 'hello',
+        payload: { a: 'thing' }
+      }
+    }, (err, res, body) => {
+      if (err) {
+        return done(err)
+      }
+      expect(res.statusCode).to.equal(401)
+      expect(aCall.isDone()).to.be.true()
+      done()
+    })
+  })
+
+  it('should fail auth on disallowed publish', (done) => {
+    const aCall = setupAuth({
+      filter: '(DeviceID=\'a\') AND (Token=\'b\')'
+    }, 200, {
+      resource: [{
+        _id: 'abcde',
+        DeviceId: 'a',
+        Token: 'b',
+        Connect: true,
+        Publish: false,
+        Subscribe: true
+      }]
+    })
+
+    request({
+      method: 'POST',
+      baseUrl: 'http://localhost:3000',
+      url: '/publish',
+      json: true,
+      auth: {
+        username: 'a',
+        password: 'b'
+      },
+      body: {
+        topic: 'hello',
+        payload: { a: 'thing' }
+      }
+    }, (err, res, body) => {
+      if (err) {
+        return done(err)
+      }
+      expect(res.statusCode).to.equal(401)
+      expect(aCall.isDone()).to.be.true()
+      done()
+    })
+  })
 })
