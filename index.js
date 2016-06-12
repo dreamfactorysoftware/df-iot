@@ -48,7 +48,7 @@ function start (opts, cb) {
 
   const servers = []
 
-  steed.parallel([
+  steed.waterfall([
     function startMqtt (cb) {
       const server = mqtt(opts, {
         // hack to correctly support pino
@@ -66,8 +66,8 @@ function start (opts, cb) {
       })
     },
 
-    function startHttp (cb) {
-      const server = http(opts, logger, cb)
+    function startHttp (mqtt, cb) {
+      const server = http(opts, mqtt, logger, cb)
       servers.push(server)
 
       server.on('error', function (err) {
