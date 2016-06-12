@@ -118,4 +118,72 @@ describe('http integration', () => {
       })
     })
   })
+
+  it('should require a payload', (done) => {
+    const cCall = setupAuth({
+      filter: '(DeviceID=\'c\') AND (Token=\'d\')'
+    }, 200, {
+      resource: [{
+        DeviceId: 'c',
+        Token: 'd',
+        Connect: true,
+        Publish: true,
+        Subscribe: true
+      }]
+    })
+    request({
+      method: 'POST',
+      baseUrl: 'http://localhost:3000',
+      url: '/publish',
+      json: true,
+      auth: {
+        username: 'c',
+        password: 'd'
+      },
+      body: {
+        topic: 'hello'
+      }
+    }, (err, res, body) => {
+      if (err) {
+        return done(err)
+      }
+      expect(res.statusCode).to.equal(400)
+      expect(cCall.isDone()).to.be.true()
+      done()
+    })
+  })
+
+  it('should require a topic', (done) => {
+    const cCall = setupAuth({
+      filter: '(DeviceID=\'c\') AND (Token=\'d\')'
+    }, 200, {
+      resource: [{
+        DeviceId: 'c',
+        Token: 'd',
+        Connect: true,
+        Publish: true,
+        Subscribe: true
+      }]
+    })
+    request({
+      method: 'POST',
+      baseUrl: 'http://localhost:3000',
+      url: '/publish',
+      json: true,
+      auth: {
+        username: 'c',
+        password: 'd'
+      },
+      body: {
+        payload: { hello: 'world' }
+      }
+    }, (err, res, body) => {
+      if (err) {
+        return done(err)
+      }
+      expect(res.statusCode).to.equal(400)
+      expect(cCall.isDone()).to.be.true()
+      done()
+    })
+  })
 })
