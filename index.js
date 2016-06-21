@@ -1,40 +1,34 @@
 'use strict'
 
 const minimist = require('minimist')
-const mosca = require('mosca')
-const request = require('request')
 const Parse = require('fast-json-parse')
 const fs = require('fs')
+const pino = require('pino')
+const moscaSerializers = require('mosca/lib/serializers')
+const steed = require('steed')
+const mqtt = require('./lib/mqtt')
+const http = require('./lib/http')
 
 function start (opts, cb) {
   opts = opts || {}
 
-  opts.interfaces = opts.interfaces || [
-    { type: 'mqtt', port: 1883 }
+  opts.interfaces = [
+    { type: 'mqtt', port: opts.mqttPort || 1883 }
   ]
 
-  opts.persistence = {
-    factory: mosca.persistence.Redis,
-    host: opts.redisHost,
-    port: opts.redisPort,
-    db: opts.redisDb,
-    ttl: {
-      subscriptions: 1000 * 60 * 10,
-      packets: 1000 * 60 * 10
+  opts.httpPort = opts.httpPort || 3000
+
+  const loggerLevel = opts.logger && opts.logger.level || 'info'
+  const loggerName = opts.logger && opts.logger.name || 'df-iot'
+
+  const logger = pino({
+    level: loggerLevel,
+    name: loggerName,
+    serializers: {
+      client: moscaSerializers.clientSerializer,
+      packet: moscaSerializers.packetSerializer
     }
-  }
-
-  opts.backend = {
-    type: 'redis',
-    host: opts.redisHost,
-    port: opts.redisPort,
-    db: opts.redisDb
-  }
-
-  opts.logger = opts.logger || {
-    level: 'info',
-    name: 'df-iot'
-  }
+  })
 
   if (!opts.dreamFactory) {
     throw new Error('missing dreamFactory base url')
@@ -52,187 +46,50 @@ function start (opts, cb) {
     throw new Error('missing authorizationToken')
   }
 
-  var server = new mosca.Server(opts, cb)
+  const servers = []
 
-  function fetchDevice (deviceId, password, cb) {
-    const reqData = {
-      method: 'GET',
-      baseUrl: opts.dreamFactory,
-      url: '/api/v2/devices/_table/devices',
-      json: true,
-      timeout: 1000 * 10, // 10 seconds
-      qs: {
-        filter: '(DeviceID=\'' + deviceId + '\') AND (Token=\'' + password + '\')'
-      },
-      headers: {
-        'X-DreamFactory-Api-Key': opts.apiKey,
-        'X-DreamFactory-Session-Token': opts.sessionToken,
-        'Authorization': opts.authorizationToken
-      }
+  steed.waterfall([
+    function startMqtt (cb) {
+      const server = mqtt(opts, {
+        // hack to correctly support pino
+        // TODO remove in mosca v2
+        child: (opts) => {
+          delete opts.serializers
+          return logger.child(opts)
+        }
+      }, cb)
+      servers.push(server)
+
+      server.on('error', function (err) {
+        // TODO close gracefully
+        throw err
+      })
+    },
+
+    function startHttp (mqtt, cb) {
+      const server = http(opts, mqtt, logger, cb)
+      servers.push(server)
+
+      server.on('error', function (err) {
+        // TODO close gracefully
+        throw err
+      })
     }
+  ], cb)
 
-    server.logger.debug(reqData, 'fetching device')
-    request(reqData, cb)
-  }
-
-  // TODO add logging
-  server.authenticate = function (client, username, password, callback) {
-    const deviceId = username || client.clientId
-    fetchDevice(deviceId, password, (err, res, body) => {
-      if (err) {
-        return callback(err)
-      }
-
-      if (res.statusCode > 300 || res.statusCode < 200) {
-        server.logger.info({ deviceId }, 'authentication denied for wrong status code')
-        // denying authorization
-        return callback(null, false)
-      }
-
-      if (body.resource.length === 0) {
-        server.logger.info({ deviceId }, 'authentication denied for missing device')
-        // denying authorization
-        return callback(null, false)
-      }
-
-      if (!body.resource[0].Connect) {
-        server.logger.info({ deviceId }, 'authentication denied because client is disabled')
-        // denying authorization
-        return callback(null, false)
-      }
-
-      client.credentials = {
-        deviceId,
-        password
-      }
-
-      server.logger.info({ deviceId }, 'authentication successful')
-
-      callback(null, true)
-    })
-  }
-
-  server.authorizePublish = function (client, topic, payload, callback) {
-    const deviceId = client.credentials.deviceId
-    const password = client.credentials.password
-    fetchDevice(deviceId, password, (err, res, body) => {
-      if (err) {
-        return callback(err)
-      }
-
-      if (res.statusCode > 300 || res.statusCode < 200) {
-        server.logger.info({ deviceId }, 'publish authorization failed because device was deleted')
-        // denying authorization
-        return callback(null, false)
-      }
-
-      if (body.resource.length === 0) {
-        server.logger.info({ deviceId }, 'publish authorization failed because device was deleted')
-        // denying authorization
-        return callback(null, false)
-      }
-
-      if (!body.resource[0].Publish) {
-        server.logger.info({ deviceId }, 'publish authorization failed because of missing Publish permission')
-        // denying authorization
-        return callback(null, false)
-      }
-
-      server.logger.info({ deviceId }, 'publish authorization successful')
-
-      callback(null, true)
-    })
-  }
-
-  server.authorizeSubscribe = function (client, topic, callback) {
-    const deviceId = client.credentials.deviceId
-    const password = client.credentials.password
-    fetchDevice(deviceId, password, (err, res, body) => {
-      if (err) {
-        return callback(err)
-      }
-
-      if (res.statusCode > 300 || res.statusCode < 200) {
-        server.logger.info({ deviceId }, 'subscribe authorization failed because of delete device')
-        // denying authorization
-        return callback(new Error('missing device'))
-      }
-
-      if (body.resource.length === 0) {
-        server.logger.info({ deviceId }, 'subscribe authorization failed because of delete device')
-        // denying authorization
-        return callback(new Error('missing device'))
-      }
-
-      if (!body.resource[0].Subscribe) {
-        server.logger.info({ deviceId }, 'subscribe authorization failed because of missing Subscribe permission')
-        // denying authorization
-        return callback(null, false)
-      }
-
-      server.logger.info({ deviceId }, 'publish authorization successful')
-      callback(null, true)
-    })
-  }
-
-  server.published = function (packet, client, callback) {
-    if (!client) {
-      return callback()
+  return {
+    close: (done) => {
+      steed.map(servers, (server, cb) => {
+        if (server.close) {
+          // mosca
+          server.close(cb)
+        } else {
+          // hapi
+          server.stop(cb)
+        }
+      }, done)
     }
-
-    const deviceId = client.credentials.deviceId
-    const logger = server.logger
-
-    const parsed = new Parse(packet.payload)
-    if (parsed.err) {
-      logger.debug({ deviceId, err: parsed.err }, 'unable to parse payload as json')
-      return callback(parsed.err)
-    }
-
-    logger.debug({ deviceId, payload: parsed.value }, 'uploading to telemetry')
-
-    // TODO setup agent
-    request({
-      method: 'POST',
-      baseUrl: opts.dreamFactory,
-      url: '/api/v2/telemetry/_table/telemetry',
-      json: true,
-      timeout: 1000 * 10, // 10 seconds
-      headers: {
-        'X-DreamFactory-Api-Key': opts.apiKey,
-        'X-DreamFactory-Session-Token': opts.sessionToken,
-        'Authorization': opts.authorizationToken
-      },
-      body: {
-        resource: [{
-          clientId: deviceId,
-          topic: packet.topic,
-          timestamp: new Date(),
-          payload: parsed.value
-        }]
-      }
-    }, (err, res, body) => {
-      if (err) {
-        return callback(err)
-      }
-
-      if (res.statusCode > 300 || res.statusCode < 200) {
-        logger.warn({ deviceId }, 'published failed')
-        // denying authorization
-        return callback(null, false)
-      }
-      logger.debug({ deviceId }, 'upload to telemetry completed')
-
-      callback(null, 200)
-    })
   }
-
-  server.on('error', function (err) {
-    // TODO close gracefully
-    throw err
-  })
-
-  return server
 }
 
 module.exports = start

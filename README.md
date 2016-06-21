@@ -30,3 +30,9 @@ On another shell:
 ```
 mqtt pub -u TempSensor1 -P TempSensor1 -v -t 'hello' -m '{ "hello": "world" }'
 ```
+
+You can also use an HTTP endpoint to publish:
+
+```
+curl -v -X POST -H 'content-type: application/json' -d '{ "topic": "aaa", "payload": { "some": "data" } }'  http://TempSensor1:TempSensor1@localhost:3000/publish
+```

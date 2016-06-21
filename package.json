@@ -4,7 +4,7 @@
   "description": "DreamFactory Internet of Things broker (MQTT)",
   "main": "index.js",
   "scripts": {
-    "test": "standard && lab -a code test.js"
+    "test": "standard && lab -a code"
   },
   "repository": {
     "type": "git",
@@ -27,9 +27,14 @@
   "homepage": "https://github.com/dreamfactorysoftware/df-iot#readme",
   "dependencies": {
     "fast-json-parse": "^1.0.1",
+    "hapi": "^13.4.1",
+    "hapi-auth-basic": "^4.2.0",
+    "hapi-pino": "^1.2.0",
     "minimist": "^1.2.0",
     "mosca": "^1.3.0",
-    "request": "^2.72.0"
+    "pino": "^2.5.0",
+    "request": "^2.72.0",
+    "steed": "^1.1.3"
   },
   "devDependencies": {
     "code": "^2.3.0",
