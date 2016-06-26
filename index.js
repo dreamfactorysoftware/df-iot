@@ -42,10 +42,6 @@ function start (opts, cb) {
     throw new Error('missing sessionToken')
   }
 
-  if (!opts.authorizationToken) {
-    throw new Error('missing authorizationToken')
-  }
-
   const servers = []
 
   steed.waterfall([

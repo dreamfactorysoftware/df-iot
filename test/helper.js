@@ -19,7 +19,6 @@ module.exports = function (lab, started) {
         dreamFactory: 'http://dream.factory',
         apiKey: 'abcde',
         sessionToken: 'session',
-        authorizationToken: 'Basic authToken',
         logger: {
           level: 'error'
         }
@@ -50,8 +49,7 @@ module.exports.setupAuth = function setupAuth (query, code, response) {
     reqheaders: {
       'Accept': 'application/json',
       'X-DreamFactory-Session-Token': 'session',
-      'X-DreamFactory-Api-Key': 'abcde',
-      'Authorization': 'Basic authToken'
+      'X-DreamFactory-Api-Key': 'abcde'
     }
   })
 
@@ -78,8 +76,7 @@ module.exports.mockIngestion = function mockIngestion (body, code, response) {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
       'X-DreamFactory-Api-Key': 'abcde',
-      'X-DreamFactory-Session-Token': 'session',
-      'Authorization': 'Basic authToken'
+      'X-DreamFactory-Session-Token': 'session'
     }
   })
 
