@@ -51,8 +51,9 @@ function start (opts, cb) {
   steed.waterfall([
     function startMqtt (cb) {
       const server = mqtt(opts, {
-        // hack to correctly support pino
-        // TODO remove in mosca v2
+        level: logger.level,
+        // hack to correctly create child logger for pino
+        // with correct serializers
         child: (opts) => {
           delete opts.serializers
           return logger.child(opts)

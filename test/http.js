@@ -106,7 +106,7 @@ describe('http integration', () => {
 
       client.on('message', (topic, payload) => {
         expect(topic).to.equal('hello')
-        expect(JSON.parse(payload)).to.deep.equal(toSend)
+        expect(JSON.parse(payload)).to.equal(toSend)
         client.end()
         expect(aCall.isDone()).to.be.true()
         expect(bCall.isDone()).to.be.true()
