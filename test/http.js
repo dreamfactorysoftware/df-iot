@@ -67,6 +67,7 @@ describe('http integration', () => {
         }]
       })
 
+      var messageReceived = false
       const pCall = mockIngestion((body) => {
         const res = body.resource[0]
         const result =
@@ -76,6 +77,13 @@ describe('http integration', () => {
 
         const date = new Date(res.timestamp)
         const now = new Date()
+
+        if (messageReceived) {
+          setImmediate(function () {
+            expect(pCall.isDone()).to.be.true()
+            done()
+          })
+        }
 
         return result && now >= date
       }, 200, {})
@@ -87,16 +95,13 @@ describe('http integration', () => {
       request({
         method: 'POST',
         baseUrl: 'http://localhost:3000',
-        url: '/publish',
+        url: '/p/hello',
         json: true,
         auth: {
           username: 'c',
           password: 'd'
         },
-        body: {
-          topic: 'hello',
-          payload: toSend
-        }
+        body: toSend
       }, (err, res, body) => {
         if (err) {
           return done(err)
@@ -111,10 +116,10 @@ describe('http integration', () => {
         expect(aCall.isDone()).to.be.true()
         expect(bCall.isDone()).to.be.true()
         expect(cCall.isDone()).to.be.true()
-        setImmediate(() => {
-          expect(pCall.isDone()).to.be.true()
+        messageReceived = true
+        if (pCall.isDone()) {
           done()
-        })
+        }
       })
     })
   })
@@ -134,14 +139,11 @@ describe('http integration', () => {
     request({
       method: 'POST',
       baseUrl: 'http://localhost:3000',
-      url: '/publish',
+      url: '/p/hello',
       json: true,
       auth: {
         username: 'c',
         password: 'd'
-      },
-      body: {
-        topic: 'hello'
       }
     }, (err, res, body) => {
       if (err) {
@@ -168,14 +170,14 @@ describe('http integration', () => {
     request({
       method: 'POST',
       baseUrl: 'http://localhost:3000',
-      url: '/publish',
+      url: '/p/',
       json: true,
       auth: {
         username: 'c',
         password: 'd'
       },
       body: {
-        payload: { hello: 'world' }
+        hello: 'world'
       }
     }, (err, res, body) => {
       if (err) {
@@ -195,15 +197,14 @@ describe('http integration', () => {
     request({
       method: 'POST',
       baseUrl: 'http://localhost:3000',
-      url: '/publish',
+      url: '/p/hello',
       json: true,
       auth: {
         username: 'a',
         password: 'b'
       },
       body: {
-        topic: 'hello',
-        payload: { a: 'thing' }
+        a: 'thing'
       }
     }, (err, res, body) => {
       if (err) {
@@ -225,15 +226,14 @@ describe('http integration', () => {
     request({
       method: 'POST',
       baseUrl: 'http://localhost:3000',
-      url: '/publish',
+      url: '/p/hellp',
       json: true,
       auth: {
         username: 'a',
         password: 'b'
       },
       body: {
-        topic: 'hello',
-        payload: { a: 'thing' }
+        a: 'thing'
       }
     }, (err, res, body) => {
       if (err) {
@@ -262,15 +262,14 @@ describe('http integration', () => {
     request({
       method: 'POST',
       baseUrl: 'http://localhost:3000',
-      url: '/publish',
+      url: '/p/hello',
       json: true,
       auth: {
         username: 'a',
         password: 'b'
       },
       body: {
-        topic: 'hello',
-        payload: { a: 'thing' }
+        a: 'thing'
       }
     }, (err, res, body) => {
       if (err) {
@@ -279,6 +278,113 @@ describe('http integration', () => {
       expect(res.statusCode).to.equal(401)
       expect(aCall.isDone()).to.be.true()
       done()
+    })
+  })
+
+  it('should support deep topics', (done) => {
+    // first call done for auth of client "a"
+    const aCall = setupAuth({
+      filter: '(DeviceID=\'a\') AND (Token=\'b\')'
+    }, 200, {
+      resource: [{
+        _id: 'abcde',
+        DeviceId: 'a',
+        Token: 'b',
+        Connect: true,
+        Publish: true,
+        Subscribe: true
+      }]
+    })
+
+    // second call done for authorizing the SUBSCRIBE of client "a"
+    const bCall = setupAuth({
+      filter: '(DeviceID=\'a\') AND (Token=\'b\')'
+    }, 200, {
+      resource: [{
+        _id: 'abcde',
+        DeviceId: 'a',
+        Token: 'b',
+        Connect: true,
+        Publish: true,
+        Subscribe: true
+      }]
+    })
+
+    const client = mqtt.connect('mqtt://a:b@localhost', {
+      clientId: 'a'
+    })
+
+    client.subscribe('a/deep/topic', (err, results) => {
+      if (err) {
+        return done(err)
+      }
+      // third call done for authorizing the PUBLISH from client "b" over HTTP
+      const cCall = setupAuth({
+        filter: '(DeviceID=\'c\') AND (Token=\'d\')'
+      }, 200, {
+        resource: [{
+          DeviceId: 'c',
+          Token: 'd',
+          Connect: true,
+          Publish: true,
+          Subscribe: true
+        }]
+      })
+
+      var messageReceived = false
+      const pCall = mockIngestion((body) => {
+        const res = body.resource[0]
+        const result =
+          res.topic === 'a/deep/topic' &&
+          res.clientId === 'c' &&
+          res.payload.some === 'data'
+
+        const date = new Date(res.timestamp)
+        const now = new Date()
+
+        if (messageReceived) {
+          setImmediate(function () {
+            expect(pCall.isDone()).to.be.true()
+            done()
+          })
+        }
+
+        return result && now >= date
+      }, 200, {})
+
+      const toSend = {
+        some: 'data'
+      }
+
+      request({
+        method: 'POST',
+        baseUrl: 'http://localhost:3000',
+        url: '/p/a/deep/topic',
+        json: true,
+        auth: {
+          username: 'c',
+          password: 'd'
+        },
+        body: toSend
+      }, (err, res, body) => {
+        if (err) {
+          return done(err)
+        }
+        expect(res.statusCode).to.equal(200)
+      })
+
+      client.on('message', (topic, payload) => {
+        expect(topic).to.equal('a/deep/topic')
+        expect(JSON.parse(payload)).to.equal(toSend)
+        client.end()
+        expect(aCall.isDone()).to.be.true()
+        expect(bCall.isDone()).to.be.true()
+        expect(cCall.isDone()).to.be.true()
+        messageReceived = true
+        if (pCall.isDone()) {
+          done()
+        }
+      })
     })
   })
 })
