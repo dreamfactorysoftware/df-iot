@@ -97,9 +97,9 @@ describe('http integration', () => {
         baseUrl: 'http://localhost:3000',
         url: '/p/hello',
         json: true,
-        auth: {
-          username: 'c',
-          password: 'd'
+        headers: {
+          'X-DF-DEVICEID': 'c',
+          'X-DF-DEVICETOKEN': 'd'
         },
         body: toSend
       }, (err, res, body) => {
@@ -141,9 +141,9 @@ describe('http integration', () => {
       baseUrl: 'http://localhost:3000',
       url: '/p/hello',
       json: true,
-      auth: {
-        username: 'c',
-        password: 'd'
+      headers: {
+        'X-DF-DEVICEID': 'c',
+        'X-DF-DEVICETOKEN': 'd'
       }
     }, (err, res, body) => {
       if (err) {
@@ -172,9 +172,9 @@ describe('http integration', () => {
       baseUrl: 'http://localhost:3000',
       url: '/p/',
       json: true,
-      auth: {
-        username: 'c',
-        password: 'd'
+      headers: {
+        'X-DF-DEVICEID': 'c',
+        'X-DF-DEVICETOKEN': 'd'
       },
       body: {
         hello: 'world'
@@ -199,9 +199,9 @@ describe('http integration', () => {
       baseUrl: 'http://localhost:3000',
       url: '/p/hello',
       json: true,
-      auth: {
-        username: 'a',
-        password: 'b'
+      headers: {
+        'X-DF-DEVICEID': 'a',
+        'X-DF-DEVICETOKEN': 'b'
       },
       body: {
         a: 'thing'
@@ -228,9 +228,9 @@ describe('http integration', () => {
       baseUrl: 'http://localhost:3000',
       url: '/p/hellp',
       json: true,
-      auth: {
-        username: 'a',
-        password: 'b'
+      headers: {
+        'X-DF-DEVICEID': 'a',
+        'X-DF-DEVICETOKEN': 'b'
       },
       body: {
         a: 'thing'
@@ -264,9 +264,9 @@ describe('http integration', () => {
       baseUrl: 'http://localhost:3000',
       url: '/p/hello',
       json: true,
-      auth: {
-        username: 'a',
-        password: 'b'
+      headers: {
+        'X-DF-DEVICEID': 'a',
+        'X-DF-DEVICETOKEN': 'b'
       },
       body: {
         a: 'thing'
@@ -361,9 +361,9 @@ describe('http integration', () => {
         baseUrl: 'http://localhost:3000',
         url: '/p/a/deep/topic',
         json: true,
-        auth: {
-          username: 'c',
-          password: 'd'
+        headers: {
+          'X-DF-DEVICEID': 'c',
+          'X-DF-DEVICETOKEN': 'd'
         },
         body: toSend
       }, (err, res, body) => {
