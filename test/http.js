@@ -387,4 +387,100 @@ describe('http integration', () => {
       })
     })
   })
+
+  it('should support retain messages', (done) => {
+    const cCall = setupAuth({
+      filter: '(DeviceID=\'c\') AND (Token=\'d\')'
+    }, 200, {
+      resource: [{
+        DeviceId: 'c',
+        Token: 'd',
+        Connect: true,
+        Publish: true,
+        Subscribe: true
+      }]
+    })
+
+    const pCall = mockIngestion((body) => {
+      const res = body.resource[0]
+      const result =
+        res.topic === 'hello' &&
+        res.clientId === 'c' &&
+        res.payload.some === 'data'
+
+      const date = new Date(res.timestamp)
+      const now = new Date()
+
+      return result && now >= date
+    }, 200, {})
+
+    const toSend = {
+      some: 'data'
+    }
+
+    request({
+      method: 'POST',
+      baseUrl: 'http://localhost:3000',
+      url: '/p/hello',
+      json: true,
+      headers: {
+        'X-DF-DEVICEID': 'c',
+        'X-DF-DEVICETOKEN': 'd',
+        'X-DF-RETAIN': 'true'
+      },
+      body: toSend
+    }, (err, res, body) => {
+      if (err) {
+        return done(err)
+      }
+
+      expect(res.statusCode).to.equal(200)
+
+      const aCall = setupAuth({
+        filter: '(DeviceID=\'a\') AND (Token=\'b\')'
+      }, 200, {
+        resource: [{
+          _id: 'abcde',
+          DeviceId: 'a',
+          Token: 'b',
+          Connect: true,
+          Publish: true,
+          Subscribe: true
+        }]
+      })
+
+      const bCall = setupAuth({
+        filter: '(DeviceID=\'a\') AND (Token=\'b\')'
+      }, 200, {
+        resource: [{
+          _id: 'abcde',
+          DeviceId: 'a',
+          Token: 'b',
+          Connect: true,
+          Publish: true,
+          Subscribe: true
+        }]
+      })
+
+      const client = mqtt.connect('mqtt://a:b@localhost', {
+        clientId: 'a'
+      })
+
+      client.subscribe('hello', (err, results) => {
+        if (err) {
+          return done(err)
+        }
+        client.on('message', (topic, payload) => {
+          expect(topic).to.equal('hello')
+          expect(JSON.parse(payload)).to.equal(toSend)
+          client.end()
+          expect(aCall.isDone()).to.be.true()
+          expect(bCall.isDone()).to.be.true()
+          expect(cCall.isDone()).to.be.true()
+          expect(pCall.isDone()).to.be.true()
+          done()
+        })
+      })
+    })
+  })
 })
