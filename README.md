@@ -40,5 +40,9 @@ mqtt pub -u TempSensor1 -P TempSensor1 -v -t 'hello' -m '{ "hello": "world" }'
 You can also use an HTTP endpoint to publish:
 
 ```
-curl -v -X POST -H 'content-type: application/json' -d '{ "topic": "aaa", "payload": { "some": "data" } }'  http://TempSensor1:TempSensor1@localhost:3000/publish
+curl -v -X POST -H 'content-type: application/json' -d '{ "some": "data" }'  http://TempSensor1:TempSensor1@localhost:3000/p/hello
 ```
+
+You can also set the `X-DF-RETAIN` header to `true` to set the message
+as retained. The `X-DF-QOS` value can be used to set the MQTT QoS level
+(0 or 1 are supported).
