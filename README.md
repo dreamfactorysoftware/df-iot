@@ -16,7 +16,7 @@ npm install mqtt -g
 The sessionToken inside `config.json` is created with:
 
 ```
-curl -i -k -3 -X POST "http://localhost:8080/api/v2/system/admin/session" -d '{ "email" : "user@example.com", "password" : "pass123" }' -H "Content-Type: application/json"
+curl -i -k -3 -X POST "http://localhost:8080/api/v2/system/admin/session" -d '{ "email" : "user@example.com", "password" : "pass123", "remember_me": true }' -H "Content-Type: application/json"
 ```
 
 To launch:
