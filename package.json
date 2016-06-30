@@ -26,9 +26,9 @@
   },
   "homepage": "https://github.com/dreamfactorysoftware/df-iot#readme",
   "dependencies": {
+    "boom": "^3.2.2",
     "fast-json-parse": "^1.0.1",
     "hapi": "^13.4.1",
-    "hapi-auth-basic": "^4.2.0",
     "hapi-pino": "^1.2.0",
     "joi": "^8.4.2",
     "minimist": "^1.2.0",
