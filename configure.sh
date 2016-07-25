@@ -23,7 +23,7 @@ curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
 sudo apt-get install -y nodejs
 
 # install Mosca
-sudo git clone https://github.com/dreamfactorysoftware/df-iot.git /opt/bitnami/apps/dreamfactory/df-iot
+# sudo git clone https://github.com/dreamfactorysoftware/df-iot.git /opt/bitnami/apps/dreamfactory/df-iot
 cd /opt/bitnami/apps/dreamfactory/df-iot
 sudo apt-get install -y jq
 sudo npm install
