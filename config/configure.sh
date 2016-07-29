@@ -49,6 +49,13 @@ sudo cp /opt/bitnami/apps/dreamfactory/df-iot/config/freeboard/conf/httpd-app.co
 sudo echo "Include \"/opt/bitnami/apps/freeboard/conf/httpd-prefix.conf\"" >> /opt/bitnami/apache2/conf/bitnami/bitnami-apps-prefix.conf
 sudo sh /opt/bitnami/ctlscript.sh restart apache
 
+IP_ADDR=$(echo `ifconfig eth0 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://'`)
+sudo cp /opt/bitnami/apps/dreamfactory/df-iot/config/freeboard/dashboard.json.template /opt/bitnami/apps/dreamfactory/df-iot/config/freeboard/dashboard.json
+sudo sed -i "s/DreamFactory_URL/$IP_ADDR/" /opt/bitnami/apps/dreamfactory/df-iot/config/freeboard/dashboard.json
+sudo mkdir /opt/bitnami/apps/dreamfactory/htdocs/storage/app/Freeboard
+sudo mv /opt/bitnami/apps/dreamfactory/df-iot/config/freeboard/dashboard.json /opt/bitnami/apps/dreamfactory/htdocs/storage/app/Freeboard/
+IP_ADDR=
+
 # install Mosca
 cd /opt/bitnami/apps/dreamfactory/df-iot
 sudo apt-get install -y jq
