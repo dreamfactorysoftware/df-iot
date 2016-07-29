@@ -39,6 +39,23 @@ sudo /opt/bitnami/mongodb/scripts/ctl.sh stop
 sudo /opt/bitnami/mongodb/scripts/ctl.sh start
 sudo mongo < /opt/bitnami/apps/dreamfactory/df-iot/df-iot-mongo.js
 
+# configure Freeboard
+sudo git clone https://github.com/Freeboard/freeboard.git /opt/bitnami/apps/freeboard/htdocs
+sudo mkdir /opt/bitnami/apps/freeboard/htdocs
+sudo mkdir /opt/bitnami/apps/freeboard/conf
+
+cd /opt/bitnami/apps/freeboard
+sudo npm install -g grunt-cli
+sudo npm install
+sudo grunt
+
+sudo cp /opt/bitnami/apps/dreamfactory/df-iot/config/freeboard/conf/httpd-prefix.conf /opt/bitnami/apps/freeboard/conf
+sudo cp /opt/bitnami/apps/dreamfactory/df-iot/config/freeboard/conf/httpd-app.conf /opt/bitnami/apps/freeboard/conf
+
+sudo echo "Include \"/opt/bitnami/apps/freeboard/conf/httpd-prefix.conf\"" >> /opt/bitnami/apache2/conf/bitnami/bitnami-apps-prefix.conf
+sudo sh /opt/bitnami/ctlscript.sh restart apache
+
+
 # configure Mosca
 cd /opt/bitnami/apps/dreamfactory/df-iot
 token=$(curl  -X POST "http://localhost/api/v2/system/admin/session" -d '{ "email" : "user@example.com", "password" : "bitnami", "remember_me": true }' -H "Content-Type: application/json" | jq '{session_token}' | jq '.session_token' | tr -d '"')
