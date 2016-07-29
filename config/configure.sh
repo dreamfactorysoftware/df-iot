@@ -2,6 +2,10 @@ cd ~
 sudo apt-get upgrade
 sudo apt-get update
 
+# update iptables to accept MQTT connections
+sudo /sbin/iptables -A INPUT -m state --state NEW -m tcp -p tcp --dport 3000 -j ACCEPT
+sudo /sbin/iptables -A INPUT -m state --state NEW -m tcp -p tcp --dport 1883 -j ACCEPT
+
 # install the latest version of Redis
 sudo apt-get install -y build-essential
 sudo apt-get install -y tcl8.5

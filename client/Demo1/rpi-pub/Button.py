@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 
+import sys
 import time
 import grovepi
 import paho.mqtt.client as mqtt
 
 button = 3
+mqtt_host=sys.argv[1]
 
 grovepi.pinMode(button,"INPUT")
 mqttc = mqtt.Client()
 mqttc.username_pw_set("rpi-pub", "rpi-pub")
-mqttc.connect("192.168.0.113", 1883)
+mqttc.connect(mqtt_host, 1883)
 
 while True:
     try:
