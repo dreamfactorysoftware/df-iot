@@ -32,7 +32,7 @@ sudo apt-get install -y nodejs
 sudo sed 's/auth/noauth/' -i.bak /opt/bitnami/mongodb/mongodb.conf
 sudo /opt/bitnami/mongodb/scripts/ctl.sh stop
 sudo /opt/bitnami/mongodb/scripts/ctl.sh start
-sudo mongo < /opt/bitnami/apps/dreamfactory/df-iot/df-iot-mongo.js
+sudo mongo < /opt/bitnami/apps/dreamfactory/df-iot/config/df-iot-mongo.js
 
 # configure Freeboard
 sudo git clone https://github.com/Freeboard/freeboard.git /opt/bitnami/apps/freeboard/htdocs
