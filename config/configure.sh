@@ -7,6 +7,13 @@ sudo /sbin/iptables -A INPUT -m state --state NEW -m tcp -p tcp --dport 3000 -j 
 sudo /sbin/iptables -A INPUT -m state --state NEW -m tcp -p tcp --dport 1883 -j ACCEPT
 
 # install the latest version of Redis
+
+sudo apt-get install -y software-properties-common
+sudo add-apt-repository -y ppa:chris-lea/redis-server
+sudo apt-get -y update
+sudo apt-get install -y redis-server
+
+
 sudo apt-get install -y build-essential
 sudo apt-get install -y tcl8.5
 wget http://download.redis.io/releases/redis-stable.tar.gz
