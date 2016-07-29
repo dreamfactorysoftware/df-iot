@@ -12,22 +12,7 @@ sudo apt-get install -y software-properties-common
 sudo add-apt-repository -y ppa:chris-lea/redis-server
 sudo apt-get -y update
 sudo apt-get install -y redis-server
-
-
-sudo apt-get install -y build-essential
-sudo apt-get install -y tcl8.5
-wget http://download.redis.io/releases/redis-stable.tar.gz
-tar xzf redis-stable.tar.gz
-cd redis-stable
-make
-make test
-sudo make install
-cd utils
-sudo ./install_server.sh
-sudo service redis_6379 restart
-cd ~
-sudo rm redis-stable.tar.gz
-sudo rm -rf redis-stable
+sudo service redis-server restart
 
 
 # install latest version of Node.js
