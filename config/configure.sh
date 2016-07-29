@@ -63,7 +63,7 @@ sudo npm install
 sudo npm install mqtt -g
 
 # configure Mosca
-cd /opt/bitnami/apps/dreamfactory/df-iot
+cd /opt/bitnami/apps/dreamfactory/df-iot/config
 token=$(curl  -X POST "http://localhost/api/v2/system/admin/session" -d '{ "email" : "user@example.com", "password" : "bitnami", "remember_me": true }' -H "Content-Type: application/json" | jq '{session_token}' | jq '.session_token' | tr -d '"')
 sudo cp config.json.template config.json
 sudo sed -i "s/DreamFactory_URL/localhost/" config.json
