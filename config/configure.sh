@@ -27,11 +27,6 @@ sudo rm -rf redis-stable
 curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
 sudo apt-get install -y nodejs
 
-# install Mosca
-cd /opt/bitnami/apps/dreamfactory/df-iot
-sudo apt-get install -y jq
-sudo npm install
-sudo npm install mqtt -g
 
 # configure MongoDB
 sudo sed 's/auth/noauth/' -i.bak /opt/bitnami/mongodb/mongodb.conf
@@ -41,10 +36,9 @@ sudo mongo < /opt/bitnami/apps/dreamfactory/df-iot/df-iot-mongo.js
 
 # configure Freeboard
 sudo git clone https://github.com/Freeboard/freeboard.git /opt/bitnami/apps/freeboard/htdocs
-sudo mkdir /opt/bitnami/apps/freeboard/htdocs
 sudo mkdir /opt/bitnami/apps/freeboard/conf
 
-cd /opt/bitnami/apps/freeboard
+cd /opt/bitnami/apps/freeboard/htdocs
 sudo npm install -g grunt-cli
 sudo npm install
 sudo grunt
@@ -55,6 +49,11 @@ sudo cp /opt/bitnami/apps/dreamfactory/df-iot/config/freeboard/conf/httpd-app.co
 sudo echo "Include \"/opt/bitnami/apps/freeboard/conf/httpd-prefix.conf\"" >> /opt/bitnami/apache2/conf/bitnami/bitnami-apps-prefix.conf
 sudo sh /opt/bitnami/ctlscript.sh restart apache
 
+# install Mosca
+cd /opt/bitnami/apps/dreamfactory/df-iot
+sudo apt-get install -y jq
+sudo npm install
+sudo npm install mqtt -g
 
 # configure Mosca
 cd /opt/bitnami/apps/dreamfactory/df-iot

@@ -1,10 +1,9 @@
 # Freeboard configuration
-
 sudo git clone https://github.com/Freeboard/freeboard.git /opt/bitnami/apps/freeboard/htdocs
 sudo mkdir /opt/bitnami/apps/freeboard/htdocs
 sudo mkdir /opt/bitnami/apps/freeboard/conf
 
-cd /opt/bitnami/apps/freeboard
+cd /opt/bitnami/apps/freeboard/htdocs
 sudo npm install -g grunt-cli
 sudo npm install
 sudo grunt
