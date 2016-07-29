@@ -1,6 +1,6 @@
 cd ~
-sudo apt-get upgrade
-sudo apt-get update
+sudo apt-get -y upgrade
+sudo apt-get -y update
 
 # update iptables to accept MQTT connections
 sudo /sbin/iptables -A INPUT -m state --state NEW -m tcp -p tcp --dport 3000 -j ACCEPT
