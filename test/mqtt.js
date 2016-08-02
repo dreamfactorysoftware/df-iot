@@ -153,7 +153,8 @@ describe('mqtt integration', () => {
     }, 200, {})
 
     const toSend = JSON.stringify({
-      some: 'data'
+      some: 'data',
+      timeseries: true
     })
 
     client1.subscribe('hello', () => {
@@ -170,6 +171,85 @@ describe('mqtt integration', () => {
       expect(aCall.isDone()).to.be.true()
       expect(bCall.isDone()).to.be.true()
       expect(cCall.isDone()).to.be.true()
+    })
+  })
+
+  it('should not store data if there is not timeseries:true', { plan: 6 }, (done) => {
+    // first call done for auth
+    const aCall = setupAuth({
+      filter: '(DeviceID=\'a\') AND (Token=\'b\')'
+    }, 200, {
+      resource: [{
+        _id: 'abcde',
+        DeviceId: 'a',
+        Token: 'b',
+        Connect: true,
+        Publish: true,
+        Subscribe: true
+      }]
+    })
+
+    // second call done for authorizing the SUBSCRIBE
+    const bCall = setupAuth({
+      filter: '(DeviceID=\'a\') AND (Token=\'b\')'
+    }, 200, {
+      resource: [{
+        _id: 'abcde',
+        DeviceId: 'a',
+        Token: 'b',
+        Connect: true,
+        Publish: true,
+        Subscribe: true
+      }]
+    })
+
+    // second call done for authorizing the PUBLISH
+    const cCall = setupAuth({
+      filter: '(DeviceID=\'a\') AND (Token=\'b\')'
+    }, 200, {
+      resource: [{
+        _id: 'abcde',
+        DeviceId: 'a',
+        Token: 'b',
+        Connect: true,
+        Publish: true,
+        Subscribe: true
+      }]
+    })
+
+    const client1 = mqtt.connect('mqtt://a:b@localhost')
+    const now = new Date()
+
+    const pCall = mockIngestion((body) => {
+      const res = body.resource[0]
+      const result =
+        res.topic === 'hello' &&
+        res.clientId === 'a' &&
+        res.payload.some === 'data'
+
+      const date = new Date(res.timestamp)
+
+      return result && now <= date
+    }, 200, {})
+
+    const toSend = JSON.stringify({
+      some: 'data'
+    })
+
+    client1.subscribe('hello', () => {
+      client1.publish('hello', toSend, { qos: 1 }, () => {
+        expect(pCall.isDone()).to.be.false()
+      })
+    })
+
+    client1.on('message', (topic, payload) => {
+      expect(topic).to.equal('hello')
+      expect(payload.toString()).to.equal(toSend)
+      client1.end()
+      expect(aCall.isDone()).to.be.true()
+      expect(bCall.isDone()).to.be.true()
+      expect(cCall.isDone()).to.be.true()
+      done()
     })
   })
 })

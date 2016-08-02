@@ -89,7 +89,8 @@ describe('http integration', () => {
       }, 200, {})
 
       const toSend = {
-        some: 'data'
+        some: 'data',
+        timeseries: true
       }
 
       request({
@@ -353,7 +354,8 @@ describe('http integration', () => {
       }, 200, {})
 
       const toSend = {
-        some: 'data'
+        some: 'data',
+        timeseries: true
       }
 
       request({
@@ -415,7 +417,8 @@ describe('http integration', () => {
     }, 200, {})
 
     const toSend = {
-      some: 'data'
+      some: 'data',
+      timeseries: true
     }
 
     request({
@@ -556,7 +559,8 @@ describe('http integration', () => {
       }, 200, {})
 
       const toSend = {
-        some: 'data'
+        some: 'data',
+        timeseries: true
       }
 
       request({
