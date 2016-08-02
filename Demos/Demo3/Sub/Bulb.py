@@ -10,7 +10,6 @@ g_led=3
 mqtt_host=sys.argv[1]
 
 def on_message(client, userdata, msg):
-        print msg.payload
 	led=json.loads(msg.payload)["color"]
 	if led == "red":
 		grovepi.digitalWrite(r_led,1)
