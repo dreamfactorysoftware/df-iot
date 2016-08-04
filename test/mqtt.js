@@ -174,7 +174,7 @@ describe('mqtt integration', () => {
     })
   })
 
-  it('should not store data if there is not timeseries:true', { plan: 6 }, (done) => {
+  it('should store data in the messages table if there is not timeseries:true', { plan: 6 }, (done) => {
     // first call done for auth
     const aCall = setupAuth({
       filter: '(DeviceID=\'a\') AND (Token=\'b\')'
@@ -230,7 +230,7 @@ describe('mqtt integration', () => {
       const date = new Date(res.timestamp)
 
       return result && now <= date
-    }, 200, {})
+    }, 200, {}, '/api/v2/messages/_table/messages')
 
     const toSend = JSON.stringify({
       some: 'data'
@@ -238,7 +238,8 @@ describe('mqtt integration', () => {
 
     client1.subscribe('hello', () => {
       client1.publish('hello', toSend, { qos: 1 }, () => {
-        expect(pCall.isDone()).to.be.false()
+        expect(pCall.isDone()).to.be.true()
+        done()
       })
     })
 
@@ -249,7 +250,6 @@ describe('mqtt integration', () => {
       expect(aCall.isDone()).to.be.true()
       expect(bCall.isDone()).to.be.true()
       expect(cCall.isDone()).to.be.true()
-      done()
     })
   })
 })
