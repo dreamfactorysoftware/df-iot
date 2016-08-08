@@ -70,7 +70,7 @@ module.exports.setupAuth = function setupAuth (query, code, response) {
   return result
 }
 
-module.exports.mockIngestion = function mockIngestion (body, code, response) {
+module.exports.mockIngestion = function mockIngestion (body, code, response, path) {
   let result = nock('http://dream.factory', {
     reqheaders: {
       'Content-Type': 'application/json',
@@ -80,8 +80,10 @@ module.exports.mockIngestion = function mockIngestion (body, code, response) {
     }
   })
 
+  path = path || '/api/v2/telemetry/_table/telemetry'
+
   result = result
-    .post('/api/v2/telemetry/_table/telemetry', body)
+    .post(path, body)
     .reply(code, JSON.stringify(response), {
       headers: {
         'Content-Type': 'application/json'
