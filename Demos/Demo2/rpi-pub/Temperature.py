@@ -16,7 +16,7 @@ mqttc.connect(mqtt_host, 1883)
 while True:
     try:
         [ t,h ]=grovepi.dht(dht_sensor_port,0)
-        mqttc.publish("df-iot/env",json.dumps({'t':t,'h':h}))
+        mqttc.publish("df-iot/env",json.dumps({"timeseries":"true",'t':t,'h':h}))
         time.sleep(.5)
         print(str(t) + "\t" + str(h));
     except IOError:
