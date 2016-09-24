@@ -1,10 +1,10 @@
 token=$(curl  -X POST "http://localhost/api/v2/system/admin/session" -d '{ "email" : "user@example.com", "password" : "bitnami", "remember_me": true }' -H "Content-Type: application/json" | jq '{session_token}' | jq '.session_token' | tr -d '"')
 
 # Delete MongoDB Collections
+sudo mongo < /opt/bitnami/apps/dreamfactory/df-iot/config/df-iot-mongo-reset.js
 sudo cp /opt/bitnami/mongodb/mongodb.conf.bak /opt/bitnami/mongodb/mongodb.conf
 sudo /opt/bitnami/mongodb/scripts/ctl.sh stop
 sudo /opt/bitnami/mongodb/scripts/ctl.sh start
-sudo mongo < /opt/bitnami/apps/dreamfactory/df-iot/config/df-iot-mongo-reset.js
 
 # Delete Freeboard
 sudo rm -rf /opt/bitnami/apps/freeboard/
