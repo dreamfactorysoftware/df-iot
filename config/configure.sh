@@ -38,6 +38,7 @@ sudo grunt
 sudo cp /opt/bitnami/apps/dreamfactory/df-iot/config/freeboard/conf/httpd-prefix.conf /opt/bitnami/apps/freeboard/conf
 sudo cp /opt/bitnami/apps/dreamfactory/df-iot/config/freeboard/conf/httpd-app.conf /opt/bitnami/apps/freeboard/conf
 
+sudo cp /opt/bitnami/apache2/conf/bitnami/bitnami-apps-prefix.conf /opt/bitnami/apache2/conf/bitnami/bitnami-apps-prefix.bak
 sudo echo "Include \"/opt/bitnami/apps/freeboard/conf/httpd-prefix.conf\"" >> /opt/bitnami/apache2/conf/bitnami/bitnami-apps-prefix.conf
 sudo sh /opt/bitnami/ctlscript.sh restart apache
 
