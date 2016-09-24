@@ -2,7 +2,7 @@ token=$(curl  -X POST "http://localhost/api/v2/system/admin/session" -d '{ "emai
 
 # Delete MongoDB Collections
 sudo mongo < /opt/bitnami/apps/dreamfactory/df-iot/config/df-iot-mongo-reset.js
-sudo cp /opt/bitnami/mongodb/mongodb.conf.bak /opt/bitnami/mongodb/mongodb.conf
+sudo cp /opt/bitnami/mongodb/mongodb.bak.conf /opt/bitnami/mongodb/mongodb.conf
 sudo /opt/bitnami/mongodb/scripts/ctl.sh stop
 sudo /opt/bitnami/mongodb/scripts/ctl.sh start
 
