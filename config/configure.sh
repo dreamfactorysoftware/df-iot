@@ -21,7 +21,7 @@ sudo apt-get install -y nodejs
 
 
 # configure MongoDB
-sudo sed 's/auth/noauth/' -i.bak /opt/bitnami/mongodb/mongodb.conf
+sudo sed 's/auth = true/noauth = true/' -i.bak /opt/bitnami/mongodb/mongodb.conf
 sudo /opt/bitnami/mongodb/scripts/ctl.sh stop
 sudo /opt/bitnami/mongodb/scripts/ctl.sh start
 sudo mongo < /opt/bitnami/apps/dreamfactory/df-iot/config/df-iot-mongo.js
