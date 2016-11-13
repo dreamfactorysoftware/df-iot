@@ -1,6 +1,8 @@
+#! /usr/bin/env node
 'use strict'
 
 const minimist = require('minimist')
+const commist = require('commist')
 const Parse = require('fast-json-parse')
 const fs = require('fs')
 const pino = require('pino')
@@ -8,6 +10,7 @@ const moscaSerializers = require('mosca/lib/serializers')
 const steed = require('steed')
 const mqtt = require('./lib/mqtt')
 const http = require('./lib/http')
+const configure = require('./lib/configure')
 
 function start (opts, cb) {
   opts = opts || {}
@@ -91,21 +94,38 @@ function start (opts, cb) {
 
 module.exports = start
 
-if (require.main === module) {
-  let opts = minimist(process.argv.slice(2), {
-    alias: {
-      config: 'c'
-    }
-  })
-  if (opts.config) {
-    let parse = new Parse(fs.readFileSync(opts.config))
-    if (parse.err) {
-      console.error('problems in parsing the JSON config file')
-      console.error(parse.err)
-      process.exit(1)
-    } else {
-      opts = parse.value
-    }
+function main () {
+  const program = commist()
+
+  program.register('configure', configure)
+  program.register('start', startCmd)
+
+  const result = program.parse(process.argv.slice(2))
+
+  if (result) {
+    startCmd(result)
   }
-  start(opts)
+
+  function startCmd (args) {
+    let opts = minimist(process.argv.slice(2), {
+      alias: {
+        config: 'c'
+      }
+    })
+    if (opts.config) {
+      let parse = new Parse(fs.readFileSync(opts.config))
+      if (parse.err) {
+        console.error('problems in parsing the JSON config file')
+        console.error(parse.err)
+        process.exit(1)
+      } else {
+        opts = parse.value
+      }
+    }
+    start(opts)
+  }
+}
+
+if (require.main === module) {
+  main()
 }
